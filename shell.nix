@@ -2,7 +2,6 @@ with import <nixpkgs> {};
 stdenv.mkDerivation {
   name = "BE_Bonus_Service_Environment";
   buildInputs = [
-    ffmpeg # for screen recording
     jdk16_headless
     metals
     sbt
