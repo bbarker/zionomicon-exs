@@ -8,17 +8,22 @@ import zio.test.*
 
 object Chapter4ExsSpec extends DefaultRunnableSpec:
   def spec = suite("Chapter 4 Exercises") {
-    testM("failWithMessageOrig fails"){
+    testM("failWithMessageOrig has defects"){
       val errMsg = "ERROR!!!!111"
       for {
-        foundDefect <- failWithMessageOrig(errMsg).sandbox.foldCauseM(
-          cause => cause match {
-            case Cause.Die(_) => UIO.succeed(true)
-            case Cause.Traced(_,_) => UIO.succeed(true)
-            case _ => UIO.succeed(false)
-          },
-          _ => UIO.succeed(false)
-        )
-      } yield assert(foundDefect)(isTrue)
+        foundDefect <- failWithMessageOrig(errMsg).run
+      } yield assert(foundDefect)(dies(anything))
+    }
+    testM("failWithMessageCaught has failures"){
+      val errMsg = "ERROR!!!!222"
+      for {
+        foundFailure <- failWithMessageCaught(errMsg).run
+      } yield assert(foundFailure)(fails(anything))
+    }
+    testM("failWithMessageCaught has failures"){
+      val errMsg = "ERROR!!!!333"
+      for {
+        foundFailure <- failWithMessage(errMsg).run
+      } yield assert(foundFailure)(fails(anything))
     }
   }
