@@ -20,7 +20,7 @@ scalacOptions ++= List(
 
 libraryDependencies ++= {
   val zio  = "dev.zio"
-  val zioV = "1.0.9"
+  val zioV = "2.0.0-M1"
   List(
     zio                    %% "zio"                 % zioV,
     zio                    %% "zio-streams"         % zioV,

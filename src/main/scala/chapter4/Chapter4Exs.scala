@@ -24,5 +24,5 @@ object Chapter4Exs:
 
   // The better solution is to use a different effect constructor
   def failWithMessage(string: String): Task[Nothing] =
-    ZIO.effect(throw new Error(string))
+    ZIO.attempt(throw new Error(string))
 

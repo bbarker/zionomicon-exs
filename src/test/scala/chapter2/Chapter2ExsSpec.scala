@@ -27,14 +27,14 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
 
   def testReadFile(funName: String, readFun: String => IO[Throwable, String]): ZSpec[Any, Throwable] =
     zio.test.suite(funName)(
-      testM(s"$funName(goodFile) succeeds"){
+      test(s"$funName(goodFile) succeeds"){
         for {
           res <- readFun(goodFile)
         } yield assert(res)(equalTo("hi\nbye"))
       },
-      testM(s"$funName(badFile) fails"){
+      test(s"$funName(badFile) fails"){
         for {
-          res <- readFun("badFile.txt").run
+          res <- readFun("badFile.txt").exit
         } yield assert(res)(fails(anything))
       },
     )
@@ -43,13 +43,13 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
     funName: String,
     writeFun: ((String, String)) => IO[IOException, Unit]
   ): ZSpec[Any, IOException] = zio.test.suite(funName)(
-      testM(s"$funName(missingFile) succeeds"){
-        // Note: test fials if "\n" is added to end of testStr
+      test(s"$funName(missingFile) succeeds"){
+        // Note: test fails if "\n" is added to end of testStr
         val testStr = "test data out\nsecond line"
         for {
-          resOut <- writeFun(missingFile, testStr).run
+          resOut <- writeFun(missingFile, testStr).exit
           resIn <- readFileZio(missingFile)
-          _ <- ZIO.effect(println(s"DEBUG: $resIn")).orDie
+          _ <- ZIO.attempt(println(s"DEBUG: $resIn")).orDie
         } yield assert(resOut)(succeeds(anything)) && assert(resIn)(equalTo(testStr))
       },
   )
