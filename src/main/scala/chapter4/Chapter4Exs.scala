@@ -14,15 +14,13 @@ object Chapter4Exs:
   // (due to Cause being recursive
   // we can't directly inspect the outer Cause)
   def failWithMessageCaught(string: String): Task[Nothing] =
-    failWithMessageOrig(string)
-      .sandbox
-      .mapError { cause => cause.dieOption match {
+    failWithMessageOrig(string).sandbox.mapError { cause =>
+      cause.dieOption match {
         case Some(thr) => Cause.Fail(thr)
-        case None              => cause
-      }}
-      .unsandbox
+        case None      => cause
+      }
+    }.unsandbox
 
   // The better solution is to use a different effect constructor
   def failWithMessage(string: String): Task[Nothing] =
     ZIO.attempt(throw new Error(string))
-
