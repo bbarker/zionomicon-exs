@@ -38,12 +38,32 @@ object Chapter2Exs:
     val acquire: ZIO[Any, IOException, BufferedSource] = IO.effect(scala.io.Source.fromFile(file))
       .mapError(err => err match {
         case ex: IOException =>
-          new IOException(s"Error in readFileZio opening $file: ${ex.getMessage}")
+          new IOException(s"Error in readFileZManaged opening $file: ${ex.getMessage}")
       })
     val release: BufferedSource => UIO[Unit] = source => ZIO.effect(source.close()).orDie
     val managed = ZManaged.make(acquire)(release)
     managed.flatMap(src => ZIO.effect(src.getLines.mkString("\n")).mapError(err => err match {
       case ex: IOException =>
-        new IOException(s"Error in readFileZio: getLines $file: ${ex.getMessage}")
+        new IOException(s"Error in readFileZManaged: getLines $file: ${ex.getMessage}")
+    }).toManaged_)
+
+  // 2
+  def writeFile(file: String, text: String): Unit =
+    import java.io.*
+    val pw = new PrintWriter(new File(file))
+    try pw.write(text) finally pw.close
+
+  def writeFileZManaged(file: String, text: String): Managed[IOException, Unit] =
+    import java.io.*
+    val acquire: IO[IOException, PrintWriter] = IO.effect(PrintWriter(new File(file)))
+      .mapError(err => err match {
+          case ex: IOException =>
+            new IOException(s"Error in writeFileZManaged opening $file: ${ex.getMessage}")
+        })
+    val release: PrintWriter => UIO[Unit] = pw => ZIO.effect(pw.close).orDie
+    val managed = ZManaged.make(acquire)(release)
+    managed.flatMap(pw => ZIO.effect(pw.write(text)).mapError(err => err match {
+      case ex: IOException =>
+        new IOException(s"Error in writeFileZManaged: getLines $file: ${ex.getMessage}")
     }).toManaged_)
 
