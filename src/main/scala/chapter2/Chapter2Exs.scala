@@ -98,3 +98,18 @@ object Chapter2Exs:
         )
         .toManaged,
     )
+
+  // 3
+  def copyFile(source: String, dest: String): Unit =
+    val contents = readFile(source)
+    writeFile(dest, contents)
+
+
+  def copyFileZManaged(source: String, dest: String): Managed[IOException, Unit] = for {
+    contents <- readFileZManaged(source)
+    _ <- writeFileZManaged(dest, contents)
+  } yield ()
+
+
+
+

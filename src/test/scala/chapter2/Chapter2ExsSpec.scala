@@ -8,8 +8,10 @@ import zio.test.*
 import java.io.IOException
 
 object Chapter2ExsSpec extends DefaultRunnableSpec:
+  val goodFileTxt: String = "hi\nbye"
   val goodFile: String    = getClass.getResource("/goodFile.txt").getPath
   val missingFile: String = goodFile.replaceFirst("goodFile.txt", "missingFile.txt")
+  val copiedFile: String = goodFile.replaceFirst("goodFile.txt", "copiedFile.txt")
 
   val aaa111 = "aaa\n111"
 
@@ -19,6 +21,7 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
     testReadFile("readFileZManaged", readFileZManaged.andThen(x => x.use(x => IO.succeed(x)))),
     test("Extra: String Equality Test")(assert("aaa\n111")(equalTo(aaa111))),
     testWriteFile("writeFileZManaged", writeFileZManaged.tupled.andThen(x => x.use(x => IO.succeed(x)))),
+    testCopyFile("copyFileZManaged", copyFileZManaged.tupled.andThen(x => x.use(x => IO.succeed(x)))),
   )
 
   def testReadFile(funName: String, readFun: String => IO[Throwable, String]): ZSpec[Any, Throwable] =
@@ -26,7 +29,7 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
       test(s"$funName(goodFile) succeeds") {
         for {
           res <- readFun(goodFile)
-        } yield assert(res)(equalTo("hi\nbye"))
+        } yield assert(res)(equalTo(goodFileTxt))
       },
       test(s"$funName(badFile) fails") {
         for {
@@ -39,13 +42,25 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
       funName: String,
       writeFun: ((String, String)) => IO[IOException, Unit],
   ): ZSpec[Any, IOException] = zio.test.suite(funName)(
-    test(s"$funName(missingFile) succeeds") {
+    test(s"$funName(missingFile, _) succeeds") {
       // Note: test fails if "\n" is added to end of testStr
       val testStr = "test data out\nsecond line"
       for {
         resOut <- writeFun(missingFile, testStr).exit
         resIn  <- readFileZio(missingFile)
-        _      <- ZIO.attempt(println(s"DEBUG: $resIn")).orDie
+        // _      <- ZIO.attempt(println(s"DEBUG: $resIn")).orDie
       } yield assert(resOut)(succeeds(anything)) && assert(resIn)(equalTo(testStr))
+    },
+  )
+
+  def testCopyFile(
+      funName: String,
+      copyFun: ((String, String)) => IO[IOException, Unit],
+  ): ZSpec[Any, IOException] = zio.test.suite(funName)(
+    test(s"$funName(goodFile, copiedFile) succeeds") {
+      for {
+        resCopy <- copyFun(goodFile, copiedFile).exit
+        resIn  <- readFileZio(copiedFile)
+      } yield assert(resCopy)(succeeds(anything)) && assert(resIn)(equalTo(goodFileTxt))
     },
   )
