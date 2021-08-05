@@ -2,7 +2,7 @@ name := "zionomicon-exercises"
 
 version := "0.1"
 
-scalaVersion := "3.0.0"
+scalaVersion := "3.0.1"
 
 
 scalacOptions ++= List(
