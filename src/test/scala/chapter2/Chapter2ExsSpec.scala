@@ -23,6 +23,7 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
     testWriteFile("writeFileZManaged", writeFileZManaged.tupled.andThen(x => x.use(x => IO.succeed(x)))),
     testCopyFile("copyFileZManaged", copyFileZManaged.tupled.andThen(x => x.use(x => IO.succeed(x)))),
     testMyIoZipWith(),
+    testCollectAll(),
   )
 
   def testReadFile(funName: String, readFun: String => IO[Throwable, String]): ZSpec[Any, Throwable] =
@@ -73,5 +74,17 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
           (MyIO.zipWith(MyIO.putStrLn("hi! "), MyIO.putStrLn("bye!"))((x, y) => s"$x$y")).run(())
           )
       } yield assert(zipUnit)(equalTo(Right("()()")))
+    },
+  )
+
+  def testCollectAll(): ZSpec[Any, Throwable] = zio.test.suite("MyIO.zipWith")(
+    test(s"MyIO.collectAll([putStrLn, putStrLn]) succeeds") {
+      for {
+        units <- ZIO.attempt(
+          (MyIO.collectAll(
+            List(MyIO.putStrLn("hi! "), MyIO.putStrLn("bye!"))
+            )).run(())
+        )
+      } yield assert(units)(equalTo(Right(List((), ())))) // Note: equalTo(Right("()()")) typechecks!
     },
   )

@@ -2,6 +2,8 @@ package chapter4
 
 import zio.*
 
+import canequal.all.given
+
 object Chapter4Exs:
 
   /* ** ** 1 ** ** */

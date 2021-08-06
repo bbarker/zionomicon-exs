@@ -16,6 +16,7 @@ scalacOptions ++= List(
   // "-Vtype-diffs",
   "-source:future",   // Choices: future and future-migration. I use this to force future deprecation warnings, etc.
   "-new-syntax",      // Require `then` and `do` in control expressions.
+  "-language:strictEquality", // multiversal equality
 )
 
 libraryDependencies ++= {
@@ -35,6 +36,7 @@ libraryDependencies ++= {
     zio                    %% "zio-test-sbt"        % zioV % Test,
     // ("io.github.kitlangton" %% "zio-magic"           % "0.3.5").cross(CrossVersion.for3Use2_13),
     // "ch.qos.logback"        % "logback-classic"     % "1.2.3"
+    "io.kevinlee"          %% "can-equal"           % "0.1.0", // Tmp fix: https://github.com/lampepfl/dotty/pull/12419
   )
 }
 

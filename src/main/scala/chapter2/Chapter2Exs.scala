@@ -2,7 +2,11 @@ package chapter2
 
 import zio.*
 import java.io.IOException
+import scala.annotation.tailrec
 import scala.io.BufferedSource
+
+import canequal.all.given
+
 
 object Chapter2Exs:
 
@@ -146,7 +150,7 @@ object Chapter2Exs:
 
   // 6
   // TODO: probably move this out to another module
-  final case class MyIO[-R, +E, +A](run: R => Either[E, A]):
+  final case class MyIO[-R, +E, +A](run: R => Either[E, A]) derives CanEqual:
     def map[B](f: A => B): MyIO[R, E, B] = MyIO(run.andThen(_.map(f)))
     def flatMap[R1 <: R, E1 >: E, B](f: A => MyIO[R1, E1, B]): MyIO[R1, E1, B] = MyIO(env =>
       run(env).map(f) match
@@ -155,8 +159,8 @@ object Chapter2Exs:
     )
 
   object MyIO:
-    def pure[R, E, A](x: A): MyIO[R, E, A] = MyIO(_ => Right(x))
-    def fail[R, E, A](e: E): MyIO[R, E, A] = MyIO(_ => Left(e))
+    def pure[R, E, A](x: => A): MyIO[R, E, A] = MyIO(_ => Right(x))
+    def fail[R, E, A](e: => E): MyIO[R, E, A] = MyIO(_ => Left(e))
 
     def putStrLn(string: String): MyIO[Any, IOException, Unit] =
       MyIO(_ => Right(println(string)))
@@ -169,5 +173,63 @@ object Chapter2Exs:
       r1 <- self
       r2 <- that
     } yield f(r1, r2)
+
+    // 7
+    // This is basically "sequence"
+    /*
+    // I like the tailrec implementation more, but not entirely sure why
+    // @nowarn doesn't work
+    @nowarn // ("msg=match may not be exhaustive")
+    def collectAll[R, E, A](in: Iterable[MyIO[R, E, A]]): MyIO[R, E, List[A]] =
+      MyIO(
+        env => {
+          val resList: List[Either[E,A]] = in.map(io => io.run(env)).toList
+          val failures = resList.filter(_.isLeft)
+          val successes = resList.filter(_.isRight)
+          (failures match {
+            case (fHead::_) => MyIO.fail(fHead match {case Left(err) => err})
+            case Nil => MyIO.pure(successes.map{case Right(x) => x})
+          }).run(env)
+        }
+      )
+      */
+    val ints = List(1,2,3)
+
+    ints match {
+      case x::_ => println(x)
+      case Nil => println("it's empty")
+    }
+
+    val intOpts: List[Option[Int]] = List(Some(1), None, Some(3))
+    intOpts match {
+      case x::_ => println(x)
+      case Nil => println("it's empty")
+    }
+
+    val intIOs: List[MyIO[Any, Unit, Int]] = List(
+      MyIO.pure(1), MyIO.fail(()), MyIO.pure(3)
+    )
+    intIOs match {
+      case x::_ => println(x)
+      case Nil => println("it's empty")
+    }
+
+    def collectAll[R, E, A](in: Iterable[MyIO[R, E, A]]): MyIO[R, E, List[A]] =
+      @tailrec
+      def go(
+        env: R
+      , ioIter: Iterable[MyIO[R, E, A]]
+      , builder: List[A]
+      ): Either[E, List[A]] =
+        ioIter.toList match {
+          case io::ios => io.run(env) match {
+            case Left(err) => Left(err)
+            case Right(x) => go(env, ios, x::builder)
+          }
+          case Nil => Right(builder)
+        }
+
+
+      MyIO(env => go(env, in, Nil))
 
 
