@@ -1,0 +1,4 @@
+
+#!/usr/bin/env bash
+
+sbt '; clean ; set scalacOptions ++= Seq() ; test:compile ; scalafmtCheckAll'

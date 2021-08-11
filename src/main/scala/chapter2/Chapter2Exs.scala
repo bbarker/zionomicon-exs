@@ -7,7 +7,6 @@ import scala.io.BufferedSource
 
 import canequal.all.given
 
-
 object Chapter2Exs:
 
   // 1
@@ -108,24 +107,21 @@ object Chapter2Exs:
     val contents = readFile(source)
     writeFile(dest, contents)
 
-
   def copyFileZManaged(source: String, dest: String): Managed[IOException, Unit] = for {
     contents <- readFileZManaged(source)
-    _ <- writeFileZManaged(dest, contents)
+    _        <- writeFileZManaged(dest, contents)
   } yield ()
 
   // 4
   def printLine(line: String) = IO.attempt(println(line))
-  val readLine = IO.attempt(scala.io.StdIn.readLine())
+  val readLine                = IO.attempt(scala.io.StdIn.readLine())
 
   val greetFun: IO[Throwable, Unit] =
-    printLine("What is your name?").flatMap(_ =>
-      readLine.flatMap(name =>
-        printLine(s"Hello, ${name}!")))
+    printLine("What is your name?").flatMap(_ => readLine.flatMap(name => printLine(s"Hello, $name!")))
   val greetFunFor: IO[Throwable, Unit] = for {
-    _ <- printLine("What is your name?")
+    _    <- printLine("What is your name?")
     name <- readLine
-    _ <- printLine(s"Hello, $name!")
+    _    <- printLine(s"Hello, $name!")
   } yield ()
 
   // 5
@@ -142,10 +138,11 @@ object Chapter2Exs:
     }
   val guessingGameFor: IO[Throwable, Unit] = for {
     int <- random
-    _ <- printLine("Guess a number:")
+    _   <- printLine("Guess a number:")
     num <- readLine
-    _ <- if num == int.toString then printLine("You guessed right!")
-         else printLine(s"You guessed wrong, the number was $int!")
+    _ <-
+      if num == int.toString then printLine("You guessed right!")
+      else printLine(s"You guessed wrong, the number was $int!")
   } yield ()
 
   // 6
@@ -154,8 +151,8 @@ object Chapter2Exs:
     def map[B](f: A => B): MyIO[R, E, B] = MyIO(run.andThen(_.map(f)))
     def flatMap[R1 <: R, E1 >: E, B](f: A => MyIO[R1, E1, B]): MyIO[R1, E1, B] = MyIO(env =>
       run(env).map(f) match
-        case Right(myIO) => myIO.run(env)
-        case err@Left(e) => Left(e)
+        case Right(myIO)   => myIO.run(env)
+        case err @ Left(e) => Left(e),
     )
 
   object MyIO:
@@ -167,10 +164,9 @@ object Chapter2Exs:
     def putStrLn(string: String): MyIO[Any, IOException, Unit] =
       MyIO(_ => Right(println(string)))
 
-
     def zipWith[R, E, A, B, C](
-      self: MyIO[R, E, A],
-      that: MyIO[R, E, B]
+        self: MyIO[R, E, A],
+        that: MyIO[R, E, B],
     )(f: (A, B) => C): MyIO[R, E, C] = for {
       r1 <- self
       r2 <- that
@@ -194,42 +190,43 @@ object Chapter2Exs:
           }).run(env)
         }
       )
-      */
-    val ints = List(1,2,3)
+     */
+    val ints = List(1, 2, 3)
 
     ints match {
-      case x::_ => println(x)
-      case Nil => println("it's empty")
+      case x :: _ => println(x)
+      case Nil    => println("it's empty")
     }
 
     val intOpts: List[Option[Int]] = List(Some(1), None, Some(3))
     intOpts match {
-      case x::_ => println(x)
-      case Nil => println("it's empty")
+      case x :: _ => println(x)
+      case Nil    => println("it's empty")
     }
 
     val intIOs: List[MyIO[Any, Unit, Int]] = List(
-      MyIO.pure(1), MyIO.fail(()), MyIO.pure(3)
+      MyIO.pure(1),
+      MyIO.fail(()),
+      MyIO.pure(3),
     )
     intIOs match {
-      case x::_ => println(x)
-      case Nil => println("it's empty")
+      case x :: _ => println(x)
+      case Nil    => println("it's empty")
     }
 
     def collectAll[R, E, A](in: Iterable[MyIO[R, E, A]]): MyIO[R, E, List[A]] =
       @tailrec
       def go(
-        env: R
-      , ioIter: Iterable[MyIO[R, E, A]]
-      , builder: List[A]
+          env: R,
+          ioList: List[MyIO[R, E, A]],
+          builder: List[A],
       ): Either[E, List[A]] =
-        ioIter.toList match {
-          case io::ios => io.run(env) match {
-            case Left(err) => Left(err)
-            case Right(x) => go(env, ios, x::builder)
-          }
+        ioList match {
+          case io :: ios =>
+            io.run(env) match {
+              case Left(err) => Left(err)
+              case Right(x)  => go(env, ios, x :: builder)
+            }
           case Nil => Right(builder)
         }
-      MyIO(env => go(env, in, Nil))
-
-
+      MyIO(env => go(env, in.toList, Nil))

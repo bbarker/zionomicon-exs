@@ -11,7 +11,7 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
   val goodFileTxt: String = "hi\nbye"
   val goodFile: String    = getClass.getResource("/goodFile.txt").getPath
   val missingFile: String = goodFile.replaceFirst("goodFile.txt", "missingFile.txt")
-  val copiedFile: String = goodFile.replaceFirst("goodFile.txt", "copiedFile.txt")
+  val copiedFile: String  = goodFile.replaceFirst("goodFile.txt", "copiedFile.txt")
 
   val aaa111 = "aaa\n111"
 
@@ -62,7 +62,7 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
     test(s"$funName(goodFile, copiedFile) succeeds") {
       for {
         resCopy <- copyFun(goodFile, copiedFile).exit
-        resIn  <- readFileZio(copiedFile)
+        resIn   <- readFileZio(copiedFile)
       } yield assert(resCopy)(succeeds(anything)) && assert(resIn)(equalTo(goodFileTxt))
     },
   )
@@ -71,8 +71,8 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
     test(s"MyIO.zipWith(putStrLn, putStrLn) succeeds") {
       for {
         zipUnit <- ZIO.attempt(
-          (MyIO.zipWith(MyIO.putStrLn("hi! "), MyIO.putStrLn("bye!"))((x, y) => s"$x$y")).run(())
-          )
+          (MyIO.zipWith(MyIO.putStrLn("hi! "), MyIO.putStrLn("bye!"))((x, y) => s"$x$y")).run(()),
+        )
       } yield assert(zipUnit)(equalTo(Right("()()")))
     },
   )
@@ -81,9 +81,11 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
     test(s"MyIO.collectAll([putStrLn, putStrLn]) succeeds") {
       for {
         units <- ZIO.attempt(
-          (MyIO.collectAll(
-            List(MyIO.putStrLn("hi! "), MyIO.putStrLn("bye!"))
-            )).run(())
+          (MyIO
+            .collectAll(
+              List(MyIO.putStrLn("hi! "), MyIO.putStrLn("bye!")),
+            ))
+            .run(()),
         )
       } yield assert(units)(equalTo(Right(List((), ())))) // Note: equalTo(Right("()()")) typechecks!
     },
