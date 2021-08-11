@@ -24,6 +24,7 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
     testCopyFile("copyFileZManaged", copyFileZManaged.tupled.andThen(x => x.use(x => IO.succeed(x)))),
     testMyIoZipWith(),
     testCollectAll(),
+    testForeach(),
   )
 
   def testReadFile(funName: String, readFun: String => IO[Throwable, String]): ZSpec[Any, Throwable] =
@@ -77,7 +78,7 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
     },
   )
 
-  def testCollectAll(): ZSpec[Any, Throwable] = zio.test.suite("MyIO.zipWith")(
+  def testCollectAll(): ZSpec[Any, Throwable] = zio.test.suite("MyIO.collectAll")(
     test(s"MyIO.collectAll([putStrLn, putStrLn]) succeeds") {
       for {
         units <- ZIO.attempt(
@@ -87,6 +88,16 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
             ))
             .run(()),
         )
-      } yield assert(units)(equalTo(Right(List((), ())))) // Note: equalTo(Right("()()")) typechecks!
+      } yield assert(units)(equalTo(Right(List((), ())))) // Note: equalTo(Right("List((), ())")) typechecks!
+    },
+  )
+
+  def effectfulDouble[R](x: Int): MyIO[R, Nothing, Double] = MyIO.pure(2.0 * x)
+
+  def testForeach(): ZSpec[Any, Throwable] = zio.test.suite("MyIO.foreach")(
+    test(s"MyIO.foreach([putStrLn, putStrLn]) succeeds") {
+      val inSeq   = Seq(1, 2, 3)
+      val outList = MyIO.foreach(inSeq)(effectfulDouble).run(())
+      assert(outList)(equalTo(Right(List(2.0, 4.0, 6.0))))
     },
   )

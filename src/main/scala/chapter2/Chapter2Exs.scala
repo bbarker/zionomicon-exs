@@ -214,6 +214,9 @@ object Chapter2Exs:
       case Nil    => println("it's empty")
     }
 
+    /*
+     * Like an effect-specific `sequence` from Haskell
+     */
     def collectAll[R, E, A](in: Iterable[MyIO[R, E, A]]): MyIO[R, E, List[A]] =
       @tailrec
       def go(
@@ -229,4 +232,29 @@ object Chapter2Exs:
             }
           case Nil => Right(builder)
         }
-      MyIO(env => go(env, in.toList, Nil))
+      MyIO(env => go(env, in.toList, Nil)).map(_.reverse)
+
+    // 8
+    /*
+     * Like an effect-specific `traverse` from Haskell
+     * `collectAll` is very similar, structurally, and could be written
+     * in terms of `foreach`.
+     */
+    def foreach[R, E, A, B](
+        in: Iterable[A],
+    )(f: A => MyIO[R, E, B]): MyIO[R, E, List[B]] =
+      @tailrec
+      def go(
+          env: R,
+          ioList: List[MyIO[R, E, A]],
+          builder: List[B],
+      ): Either[E, List[B]] =
+        ioList match {
+          case io :: ios =>
+            io.flatMap(f).run(env) match {
+              case Left(err) => Left(err)
+              case Right(x)  => go(env, ios, x :: builder)
+            }
+          case Nil => Right(builder)
+        }
+      MyIO(env => go(env, in.toList.map(MyIO.pure), Nil)).map(_.reverse)
