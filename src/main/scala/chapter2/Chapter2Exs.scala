@@ -150,7 +150,7 @@ object Chapter2Exs:
 
   // 6
   // TODO: probably move this out to another module
-  final case class MyIO[-R, +E, +A](run: R => Either[E, A]) derives CanEqual:
+  final case class MyIO[-R, +E, +A](run: R => Either[E, A]):
     def map[B](f: A => B): MyIO[R, E, B] = MyIO(run.andThen(_.map(f)))
     def flatMap[R1 <: R, E1 >: E, B](f: A => MyIO[R1, E1, B]): MyIO[R1, E1, B] = MyIO(env =>
       run(env).map(f) match
@@ -159,6 +159,8 @@ object Chapter2Exs:
     )
 
   object MyIO:
+    given canEqualMyIO[R, E, A]: CanEqual[MyIO[R, E, A], MyIO[R, E, A]] = CanEqual.derived
+
     def pure[R, E, A](x: => A): MyIO[R, E, A] = MyIO(_ => Right(x))
     def fail[R, E, A](e: => E): MyIO[R, E, A] = MyIO(_ => Left(e))
 
@@ -228,8 +230,6 @@ object Chapter2Exs:
           }
           case Nil => Right(builder)
         }
-
-
       MyIO(env => go(env, in, Nil))
 
 
