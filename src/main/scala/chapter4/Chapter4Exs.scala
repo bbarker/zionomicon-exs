@@ -2,6 +2,8 @@ package chapter4
 
 import zio.*
 
+import canequal.all.given
+
 object Chapter4Exs:
 
   /* ** ** 1 ** ** */
@@ -15,6 +17,7 @@ object Chapter4Exs:
   // we can't directly inspect the outer Cause)
   def failWithMessageCaught(string: String): Task[Nothing] =
     failWithMessageOrig(string).sandbox.mapError { cause =>
+      given CanEqual[None.type, Option[?]] = CanEqual.derived // TODO - see about adding this to Scala prelude
       cause.dieOption match {
         case Some(thr) => Cause.Fail(thr)
         case None      => cause
