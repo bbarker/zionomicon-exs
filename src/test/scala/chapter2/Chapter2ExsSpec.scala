@@ -5,7 +5,9 @@ import chapter2.Chapter2Exs.*
 import zio.*
 import zio.test.Assertion.*
 import zio.test.*
+import zio.test.environment.TestConsole
 import java.io.IOException
+import scala.compiletime.ops.any
 
 object Chapter2ExsSpec extends DefaultRunnableSpec:
   val goodFileTxt: String = "hi\nbye"
@@ -22,9 +24,11 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
     test("Extra: String Equality Test")(assert("aaa\n111")(equalTo(aaa111))),
     testWriteFile("writeFileZManaged", writeFileZManaged.tupled.andThen(x => x.use(x => IO.succeed(x)))),
     testCopyFile("copyFileZManaged", copyFileZManaged.tupled.andThen(x => x.use(x => IO.succeed(x)))),
-    testMyIoZipWith(),
-    testCollectAll(),
-    testForeach(),
+    testMyIoZipWith,
+    testCollectAll,
+    testForeach,
+    testPrintLine,
+    testCat,
   )
 
   def testReadFile(funName: String, readFun: String => IO[Throwable, String]): ZSpec[Any, Throwable] =
@@ -68,7 +72,7 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
     },
   )
 
-  def testMyIoZipWith(): ZSpec[Any, Throwable] = zio.test.suite("MyIO.zipWith")(
+  val testMyIoZipWith: ZSpec[Any, Throwable] = zio.test.suite("MyIO.zipWith")(
     test(s"MyIO.zipWith(putStrLn, putStrLn) succeeds") {
       for {
         zipUnit <- ZIO.attempt(
@@ -78,7 +82,7 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
     },
   )
 
-  def testCollectAll(): ZSpec[Any, Throwable] = zio.test.suite("MyIO.collectAll")(
+  val testCollectAll: ZSpec[Any, Throwable] = zio.test.suite("MyIO.collectAll")(
     test(s"MyIO.collectAll([putStrLn, putStrLn]) succeeds") {
       for {
         units <- ZIO.attempt(
@@ -94,10 +98,30 @@ object Chapter2ExsSpec extends DefaultRunnableSpec:
 
   def effectfulDouble[R](x: Int): MyIO[R, Nothing, Double] = MyIO.pure(2.0 * x)
 
-  def testForeach(): ZSpec[Any, Throwable] = zio.test.suite("MyIO.foreach")(
+  val testForeach: ZSpec[Any, Throwable] = zio.test.suite("MyIO.foreach")(
     test(s"MyIO.foreach([putStrLn, putStrLn]) succeeds") {
       val inSeq   = Seq(1, 2, 3)
       val outList = MyIO.foreach(inSeq)(effectfulDouble).run(())
       assert(outList)(equalTo(Right(List(2.0, 4.0, 6.0))))
+    },
+  )
+
+  val testPrintLine: ZSpec[ZEnv & Has[TestConsole], Throwable] = zio.test.suite("printLine")(
+    test(s"We can test ZIO's printLine") {
+      for {
+        _      <- Console.printLine("hello")
+        _      <- Console.printLine("goodbye")
+        output <- TestConsole.output
+      } yield assert(output)(equalTo(Vector("hello\n", "goodbye\n")))
+    },
+  )
+
+  val testCat: ZSpec[ZEnv & Has[TestConsole], Nothing] = zio.test.suite("cat")(
+    test(s"Cat.run goodFile.txt succeeds") {
+      for {
+        code   <- Cat.run(List(goodFile, goodFile))
+        output <- TestConsole.output
+      } yield assert(code)(equalTo(ExitCode.success))
+        && assert(output)(equalTo(Vector(goodFileTxt + "\n", goodFileTxt + "\n")))
     },
   )

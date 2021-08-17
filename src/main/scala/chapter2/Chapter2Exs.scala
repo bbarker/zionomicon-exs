@@ -113,15 +113,15 @@ object Chapter2Exs:
   } yield ()
 
   // 4
-  def printLine(line: String) = IO.attempt(println(line))
-  val readLine                = IO.attempt(scala.io.StdIn.readLine())
+  def myPrintLine(line: String) = IO.attempt(println(line))
+  val readLine                  = IO.attempt(scala.io.StdIn.readLine())
 
   val greetFun: IO[Throwable, Unit] =
-    printLine("What is your name?").flatMap(_ => readLine.flatMap(name => printLine(s"Hello, $name!")))
+    myPrintLine("What is your name?").flatMap(_ => readLine.flatMap(name => myPrintLine(s"Hello, $name!")))
   val greetFunFor: IO[Throwable, Unit] = for {
-    _    <- printLine("What is your name?")
+    _    <- myPrintLine("What is your name?")
     name <- readLine
-    _    <- printLine(s"Hello, $name!")
+    _    <- myPrintLine(s"Hello, $name!")
   } yield ()
 
   // 5
@@ -129,20 +129,20 @@ object Chapter2Exs:
 
   val guessingGame: IO[Throwable, Unit] =
     random.flatMap { int =>
-      printLine("Guess a number:").flatMap { _ =>
+      myPrintLine("Guess a number:").flatMap { _ =>
         readLine.flatMap { num =>
-          if num == int.toString then printLine("You guessed right!")
-          else printLine(s"You guessed wrong, the number was $int!")
+          if num == int.toString then myPrintLine("You guessed right!")
+          else myPrintLine(s"You guessed wrong, the number was $int!")
         }
       }
     }
   val guessingGameFor: IO[Throwable, Unit] = for {
     int <- random
-    _   <- printLine("Guess a number:")
+    _   <- myPrintLine("Guess a number:")
     num <- readLine
     _ <-
-      if num == int.toString then printLine("You guessed right!")
-      else printLine(s"You guessed wrong, the number was $int!")
+      if num == int.toString then myPrintLine("You guessed right!")
+      else myPrintLine(s"You guessed wrong, the number was $int!")
   } yield ()
 
   // 6
@@ -258,3 +258,25 @@ object Chapter2Exs:
           case Nil => Right(builder)
         }
       MyIO(env => go(env, in.toList.map(MyIO.pure), Nil)).map(_.reverse)
+
+    // 9, untested
+    def orElse[R, E1, E2, A](
+        self: MyIO[R, E1, A],
+        that: MyIO[R, E2, A],
+    ): MyIO[R, E2, A] = MyIO(env =>
+      self.run(env) match {
+        case Left(_)  => that.run(env)
+        case Right(v) => Right(v)
+      },
+    )
+
+  // 10
+  import zio.App as ZIOApp
+  object Cat extends ZIOApp {
+    def run(commandLineArguments: List[String]) = ZManaged
+      .foreach(commandLineArguments)(
+        readFileZManaged,
+      )
+      .use(lines => ZIO.foreach(lines)(l => Console.printLine(l)))
+      .exitCode
+  }
