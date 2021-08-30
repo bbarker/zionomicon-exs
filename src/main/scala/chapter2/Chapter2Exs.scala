@@ -2,6 +2,7 @@ package chapter2
 
 import zio.*
 import java.io.IOException
+import java.lang.System
 import scala.annotation.tailrec
 import scala.io.BufferedSource
 
@@ -156,8 +157,6 @@ object Chapter2Exs:
     )
 
   object MyIO:
-    given canEqualMyIO[R, E, A]: CanEqual[MyIO[R, E, A], MyIO[R, E, A]] = CanEqual.derived
-
     def pure[R, E, A](x: => A): MyIO[R, E, A] = MyIO(_ => Right(x))
     def fail[R, E, A](e: => E): MyIO[R, E, A] = MyIO(_ => Left(e))
 
@@ -211,7 +210,7 @@ object Chapter2Exs:
     )
     intIOs match {
       case x :: _ => println(x)
-      case Nil    => println("it's empty")
+      case List() => println("it's empty")
     }
 
     /*
@@ -230,7 +229,7 @@ object Chapter2Exs:
               case Left(err) => Left(err)
               case Right(x)  => go(env, ios, x :: builder)
             }
-          case Nil => Right(builder)
+          case List() => Right(builder)
         }
       MyIO(env => go(env, in.toList, Nil)).map(_.reverse)
 
@@ -255,7 +254,7 @@ object Chapter2Exs:
               case Left(err) => Left(err)
               case Right(x)  => go(env, ios, x :: builder)
             }
-          case Nil => Right(builder)
+          case List() => Right(builder)
         }
       MyIO(env => go(env, in.toList.map(MyIO.pure), Nil)).map(_.reverse)
 
@@ -280,3 +279,32 @@ object Chapter2Exs:
       .use(lines => ZIO.foreach(lines)(l => Console.printLine(l)))
       .exitCode
   }
+
+  // 11
+  def eitherToZIO[E, A](either: Either[E, A]): ZIO[Any, E, A] = either match {
+    case Left(err)  => ZIO.fail(err)
+    case Right(res) => ZIO.succeed(res)
+  }
+
+  // 12 (this is basically a safe `head` but for ZIO)
+  def listToZIO[A](list: List[A]): ZIO[Any, None.type, A] = list match {
+    case x :: xs => ZIO.succeed(x)
+    case _       => ZIO.fail(None)
+  }
+
+  // 13
+  def currentTime(): Long                          = System.currentTimeMillis()
+  lazy val currentTimeZIO: ZIO[Any, Nothing, Long] = ZIO.succeed(System.currentTimeMillis())
+
+  // 14
+  //
+  // Convert this call-back function to ZIO using effectAsync
+  //
+  def getCacheValue(
+      key: String,
+      onSuccess: String => Unit,
+      onFailure: Throwable => Unit,
+  ): Unit = ???
+
+// def getCacheValueZIO(key: String, onSucc: String => Unit, onFail: Throwable => Unit): IO[Throwable, String] =
+//   IO.async(register => register(getCacheValue(key, onSucc, onFail)))
